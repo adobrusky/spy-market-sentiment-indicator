@@ -1,0 +1,62 @@
+//@version=5
+indicator("SPY Sectors Relative Market Sentiment", shorttitle="SPY Market Sentiment", overlay=true, max_bars_back=500)
+
+getDailyChange(ticker) =>
+    request.security(ticker, "D", (close - close[1]) / close[1])
+
+// User input for sector weights and tickers
+tickerWeightMapping = input("XLK:29.08,XLF:13.03,XLV:12.74,XLY:10.95,XLI:8.47,XLP:6.14,XLE:3.97,XRE:2.55,XLB:2.44,XLU:2.40", title="Sector Weights (Format: Ticker:Weight,Ticker:Weight,...)")
+bullColor = input(color.rgb(8, 153, 129), title="Bullish Color")
+bearColor = input(color.rgb(242, 54, 69), title="Bearish Color")
+textColor = input(color.white, title="Text Color")
+changeSPY = getDailyChange("SPY")
+
+getWeightedChange(ticker, weight) =>
+    changeSector = getDailyChange(ticker)
+    (changeSector - changeSPY) * weight
+
+calculateRelativeSentiment(input) =>
+    pairs = str.split(input, ",")
+    float sentiment = 0.0
+    for pair in pairs
+        splitPair = str.split(pair, ":")
+        ticker = str.tostring(array.get(splitPair, 0))
+        weight = str.tonumber(str.tostring(array.get(splitPair, 1)))
+        if ticker == "XLK"
+            sentiment := sentiment + getWeightedChange("XLK", weight)
+        if ticker == "XLF"
+            sentiment := sentiment + getWeightedChange("XLF", weight)
+        if ticker == "XLV"
+            sentiment := sentiment + getWeightedChange("XLV", weight)
+        if ticker == "XLY"
+            sentiment := sentiment + getWeightedChange("XLY", weight)
+        if ticker == "XLI"
+            sentiment := sentiment + getWeightedChange("XLI", weight)
+        if ticker == "XLC"
+            sentiment := sentiment + getWeightedChange("XLC", weight)
+        if ticker == "XLP"
+            sentiment := sentiment + getWeightedChange("XLP", weight)
+        if ticker == "XLE"
+            sentiment := sentiment + getWeightedChange("XLE", weight)
+        if ticker == "XLU"
+            sentiment := sentiment + getWeightedChange("XLU", weight)
+        if ticker == "XLB"
+            sentiment := sentiment + getWeightedChange("XLB", weight)
+        if ticker == "XLRE"
+            sentiment := sentiment + getWeightedChange("XLRE", weight)
+    sentiment
+
+sectorsRelativeToSPY = calculateRelativeSentiment(tickerWeightMapping)
+               
+// Determine color based on sentiment and adjust intensity of color based on magnitude of sentiment
+colorSentiment = sectorsRelativeToSPY > 0 ? bullColor : bearColor
+intensity = math.min(math.abs(sectorsRelativeToSPY), 1)
+finalColor = color.new(colorSentiment, 100 - intensity * 100)
+
+// Create a table to display the sentiment
+var table sentimentTable = table.new(position.bottom_center, 1, 1)
+
+// Update table only on the last bar
+if barstate.islast
+    table.clear(sentimentTable, 0, 0, 0, 0)
+    table.cell(sentimentTable, 0, 0, str.format("Sentiment: {0,number,0.00}", sectorsRelativeToSPY * 100), bgcolor=finalColor, text_color=textColor)
