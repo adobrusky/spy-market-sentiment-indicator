@@ -1,18 +1,19 @@
 //@version=5
 indicator("SPY Sectors Relative Market Sentiment", shorttitle="SPY Market Sentiment", overlay=true, max_bars_back=500)
 
-getDailyChange(ticker) =>
-    request.security(ticker, "D", (close - close[1]) / close[1])
+getDailyChange(ticker, timeframe) =>
+    request.security(ticker, timeframe, (close - close[1]) / close[1])
 
 // User input for sector weights and tickers
 tickerWeightMapping = input("XLK:29.08,XLF:13.03,XLV:12.74,XLY:10.95,XLI:8.47,XLP:6.14,XLE:3.97,XRE:2.55,XLB:2.44,XLU:2.40", title="Sector Weights (Format: Ticker:Weight,Ticker:Weight,...)")
+sentimentTimeframe = input.timeframe("D", "Sentiment Timeframe")
 bullColor = input(color.rgb(8, 153, 129), title="Bullish Color")
 bearColor = input(color.rgb(242, 54, 69), title="Bearish Color")
 textColor = input(color.white, title="Text Color")
-changeSPY = getDailyChange("SPY")
+changeSPY = getDailyChange("SPY", sentimentTimeframe)
 
 getWeightedChange(ticker, weight) =>
-    changeSector = getDailyChange(ticker)
+    changeSector = getDailyChange(ticker, sentimentTimeframe)
     (changeSector - changeSPY) * weight
 
 calculateRelativeSentiment(input) =>
